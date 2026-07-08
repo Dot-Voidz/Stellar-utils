@@ -1,0 +1,39 @@
+name: Build Soroban contracts
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+
+      - name: Install soroban-cli
+        run: |
+          cargo install --locked --version 0.1.0 soroban-cli || cargo install --locked soroban-cli
+
+      - name: Build Stellar-utils contract
+        working-directory: contract
+        run: soroban build
+
+      - name: Build Dashboard contract
+        working-directory: Stellar-Wallet-Dashboard/contract
+        run: soroban build
+
+      - name: Upload wasm artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: contracts-wasm
+          path: |
+            contract/target/wasm32-unknown-unknown/release/*.wasm
+            Stellar-Wallet-Dashboard/contract/target/wasm32-unknown-unknown/release/*.wasm

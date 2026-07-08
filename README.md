@@ -1,115 +1,38 @@
 # Stellar Utils
 
-Useful utilities for Stellar blockchain development.
+Useful utilities and developer helpers for Stellar blockchain development.
 
-## Installation
+Contents in this folder:
+
+- `src/` — library source (exports used utilities)
+- `tests/` — unit tests
+- `frontend/` — example static demo for the utilities
+- `backend/` — example Express API wrapping the utilities
+- `contract/` — Soroban contract scaffold (Rust)
+
+Quick start
+
+1. Install dependencies for backend (Node.js >= 18) and run tests:
 
 ```bash
-npm install stellar-utils
+cd backend
+npm install
+npm test
 ```
 
-## Usage
+2. Run the example frontend (static page): open `frontend/index.html` in a browser.
 
-### Validate Address
-```javascript
-const { validateAddress } = require('stellar-utils');
+Project layout and purpose
 
-const isValid = validateAddress('GABC123...');
-console.log(isValid); // true or false
-```
+- `frontend/` — Minimal demo UI that uses the backend API or directly imports
+  utilities for quick manual testing.
+- `backend/` — Small Express server exposing endpoints like `/balance`,
+  `/generate-keypair`, `/submit-transaction` that call into `src/`.
+- `contract/` — Starter Soroban contract demonstrating a simple escrow-like
+  function; intended as a minimal template to extend.
 
-### Validate Secret Key
-```javascript
-const { validateSecretKey } = require('stellar-utils');
+Contributing
 
-const isValid = validateSecretKey('SDEF456...');
-console.log(isValid); // true or false
-```
+Please follow the standard Git workflow. See `CONTRIBUTING.md` for details.
 
-### Generate Keypair
-```javascript
-const { generateKeypair } = require('stellar-utils');
-
-const pair = generateKeypair();
-console.log(pair.publicKey); // G...
-console.log(pair.secretKey); // S...
-```
-
-### Get Balance
-```javascript
-const { getBalance } = require('stellar-utils');
-
-// Testnet (default)
-const balance = await getBalance('GABC123...');
-
-// Public network
-const publicBalance = await getBalance('GABC123...', 'public');
-```
-
-### Create Payment Transaction
-```javascript
-const { createPaymentTransaction } = require('stellar-utils');
-
-const xdr = await createPaymentTransaction(
-  'SDEF456...', // Source secret key
-  'GABC123...', // Destination address
-  '10.5', // Amount
-  'XLM', // Asset code (default XLM)
-  null, // Asset issuer (required for non-XLM)
-  'testnet' // Network (default testnet)
-);
-```
-
-### Submit Transaction
-```javascript
-const { submitTransaction } = require('stellar-utils');
-
-const result = await submitTransaction(xdr);
-console.log(result);
-```
-
-## API Reference
-
-### validateAddress(address)
-Validates a Stellar public address.
-- **address**: `string` - Stellar address (starts with 'G')
-- **returns**: `boolean`
-
-### validateSecretKey(secretKey)
-Validates a Stellar secret key.
-- **secretKey**: `string` - Stellar secret key (starts with 'S')
-- **returns**: `boolean`
-
-### generateKeypair()
-Generates a new random Stellar keypair.
-- **returns**: `Object` with `publicKey` and `secretKey`
-
-### getBalance(address, network)
-Gets the balance of a Stellar address.
-- **address**: `string` - Stellar address
-- **network**: `string` (optional) - 'testnet' or 'public' (default: 'testnet')
-- **returns**: `Promise<Array>` - Array of balances
-
-### createPaymentTransaction(sourceSecret, destination, amount, assetCode, assetIssuer, network)
-Creates and signs a payment transaction.
-- **sourceSecret**: `string` - Source account secret key
-- **destination**: `string` - Destination address
-- **amount**: `string` - Amount to send
-- **assetCode**: `string` (optional) - Asset code (default: 'XLM')
-- **assetIssuer**: `string` (optional) - Asset issuer (required for non-XLM)
-- **network**: `string` (optional) - 'testnet' or 'public' (default: 'testnet')
-- **returns**: `Promise<string>` - Signed transaction XDR
-
-### submitTransaction(transactionXDR, network)
-Submits a signed transaction to the network.
-- **transactionXDR**: `string` - Signed transaction XDR
-- **network**: `string` (optional) - 'testnet' or 'public' (default: 'testnet')
-- **returns**: `Promise<Object>` - Transaction result
-
-## Contributing
-
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
-
-## License
-
-GPL-3.0
+License: GPL-3.0
