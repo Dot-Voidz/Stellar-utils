@@ -3,8 +3,8 @@ const { validateAddress, validateSecretKey, generateKeypair } = require('../src/
 describe('Stellar Utils', () => {
   describe('validateAddress', () => {
     test('should return true for valid address', () => {
-      const validAddress = 'GCEE62D47LJ5VPSM35K5N6UHPJ3S37VZ55ZJ35X2WVW2O2XK347L4QJK';
-      expect(validateAddress(validAddress)).toBe(true);
+      const { publicKey } = generateKeypair();
+      expect(validateAddress(publicKey)).toBe(true);
     });
 
     test('should return false for invalid address', () => {
@@ -16,8 +16,8 @@ describe('Stellar Utils', () => {
 
   describe('validateSecretKey', () => {
     test('should return true for valid secret key', () => {
-      const validSecret = 'SBKWBJLJ4XH3OZ2J6PXJ36Z34XK5WVW2O2XK347L4QJKCEE62D47LJ5VPSM3';
-      expect(validateSecretKey(validSecret)).toBe(true);
+      const { secretKey } = generateKeypair();
+      expect(validateSecretKey(secretKey)).toBe(true);
     });
 
     test('should return false for invalid secret key', () => {
