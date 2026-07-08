@@ -1,6 +1,9 @@
 name: CI
 
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
 
 jobs:
   test:
@@ -21,5 +24,39 @@ jobs:
       - name: Install dependencies
         run: npm install
       
-      - name: Run tests
+      - name: Run root unit tests
         run: npm test
+
+      - name: Check backend syntax
+        run: node --check backend/index.js
+
+      - name: Check frontend script syntax
+        run: node --check frontend/app.js
+
+      - name: Validate frontend HTML structure
+        run: |
+          node -e "const fs=require('fs'); const html=fs.readFileSync('frontend/index.html','utf8'); if(!/src=\"app.js\"/.test(html)) throw new Error('Missing app.js reference in frontend/index.html'); if(!/href=\"styles.css\"/.test(html)) throw new Error('Missing styles.css reference in frontend/index.html');"
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+
+      - name: Install soroban-cli
+        run: |
+          cargo install --locked --version 0.1.0 soroban-cli || cargo install --locked soroban-cli
+
+      - name: Build Stellar-utils contract
+        working-directory: contract
+        run: soroban build
+
+      - name: Build Dashboard contract
+        working-directory: Stellar-Wallet-Dashboard/contract
+        run: soroban build
+
+      - name: Verify build artifacts
+        run: |
+          ls -1 contract/target/wasm32-unknown-unknown/release/*.wasm
+          ls -1 Stellar-Wallet-Dashboard/contract/target/wasm32-unknown-unknown/release/*.wasm
