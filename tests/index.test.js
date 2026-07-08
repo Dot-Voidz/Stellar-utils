@@ -3,6 +3,9 @@ const { validateAddress, validateSecretKey, generateKeypair } = require('../src/
 describe('Stellar Utils', () => {
   describe('validateAddress', () => {
     test('should return true for valid address', () => {
+      // Use a generated keypair here because some static example keys
+      // may not be valid according to `stellar-sdk`'s validators.
+      // Generating at runtime guarantees a valid public key for the test.
       const { publicKey } = generateKeypair();
       expect(validateAddress(publicKey)).toBe(true);
     });
@@ -16,6 +19,8 @@ describe('Stellar Utils', () => {
 
   describe('validateSecretKey', () => {
     test('should return true for valid secret key', () => {
+      // Use a generated keypair for the same reason as above — ensures
+      // the secret seed is a valid Ed25519 secret according to the SDK.
       const { secretKey } = generateKeypair();
       expect(validateSecretKey(secretKey)).toBe(true);
     });
