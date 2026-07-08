@@ -1,5 +1,7 @@
-# Stellar-utils
-
+###  Stellar-Utils
+- A reusable, modular JavaScript library that encapsulates common Stellar operations
+- Provides clean, well-documented abstractions for key management, transaction building, balance queries, and network interactions
+- Built on top of the official Stellar SDK to simplify development workflows
 A lightweight, modular collection of core utility functions designed to streamline development workflows, optimize data handling, and eliminate repetitive boilerplate code.
 
 ---
@@ -26,6 +28,14 @@ Stellar-utils/
 │   └── index.js      # Main entry point
 ├── README.md
 └── LICENSE
+Stellar-utils/
+└── main/
+    ├── src/
+    │   ├── keys.js          # Keypair generation, seed handling, and validation
+    │   ├── account.js       # Horizon API wrappers for balances and accounts
+    │   └── transaction.js   # Transaction builders, signing, and submission
+    ├── index.js             # Unified module entry point
+    └── package.json
 // Example: Importing standard helpers (adjust syntax based on your runtime environment)
 const { formatData, validateInput } = require('./Stellar-utils/main');
 
