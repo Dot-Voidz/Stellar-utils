@@ -2,36 +2,72 @@
 
 Useful utilities and developer helpers for Stellar blockchain development.
 
-Contents in this folder:
+## Quick start
 
-- `src/` — library source (exports used utilities)
+Install the package dependencies and try the core helpers directly from Node.js:
+
+```bash
+npm install
+node -e "const { generateKeypair, validateAddress, validateSecretKey } = require('./src'); const pair = generateKeypair(); console.log(pair.publicKey); console.log(validateAddress(pair.publicKey)); console.log(validateSecretKey(pair.secretKey));"
+```
+
+### Copy-paste examples
+
+Validate a public key:
+
+```js
+const { validateAddress } = require('stellar-utils');
+console.log(validateAddress('GBRPYHIL2CI3FNQ4BXLFMNDLFJUNPU2HY3ZMFSHONUCEOASW7QC7OX2H'));
+```
+
+Validate a secret key:
+
+```js
+const { validateSecretKey } = require('stellar-utils');
+console.log(validateSecretKey('S...'));
+```
+
+Generate a keypair:
+
+```js
+const { generateKeypair } = require('stellar-utils');
+const pair = generateKeypair();
+console.log(pair.publicKey);
+console.log(pair.secretKey);
+```
+
+Check an account balance:
+
+```js
+const { getBalance } = require('stellar-utils');
+const balances = await getBalance('GBRPYHIL2CI3FNQ4BXLFMNDLFJUNPU2HY3ZMFSHONUCEOASW7QC7OX2H', 'testnet');
+console.log(balances);
+```
+
+Create a payment transaction:
+
+```js
+const { createPaymentTransaction } = require('stellar-utils');
+const xdr = await createPaymentTransaction('S...', 'GBRPYHIL2CI3FNQ4BXLFMNDLFJUNPU2HY3ZMFSHONUCEOASW7QC7OX2H', '1.5');
+console.log(xdr);
+```
+
+## Project layout
+
+- `src/` — library source (exports the utilities)
 - `tests/` — unit tests
+- `examples/` — runnable Node.js examples for the main workflows
+- `docs/` — API reference and usage guidance
 - `frontend/` — example static demo for the utilities
 - `backend/` — example Express API wrapping the utilities
 - `contract/` — Soroban contract scaffold (Rust)
 
-Quick start
+## Examples and reference
 
-1. Install dependencies for backend (Node.js >= 18) and run tests:
+- See [examples/README.md](examples/README.md) for runnable scripts.
+- See [docs/API.md](docs/API.md) for the full API guide and best practices.
 
-```bash
-cd backend
-npm install
-npm test
-```
-
-2. Run the example frontend (static page): open `frontend/index.html` in a browser.
-
-Project layout and purpose
-
-- `frontend/` — Minimal demo UI that uses the backend API or directly imports
-  utilities for quick manual testing.
-- `backend/` — Small Express server exposing endpoints like `/health` and
-  `/generate-keypair` that call into `src/`.
-- `contract/` — Starter Soroban contract demonstrating a simple escrow-like
-  function; intended as a minimal template to extend.
-
-Continuous Integration
+## Continuous Integration
 
 This repository includes GitHub Actions workflows that run on every push and
 pull request:

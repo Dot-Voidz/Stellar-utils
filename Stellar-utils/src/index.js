@@ -1,9 +1,13 @@
 const StellarSdk = require('stellar-sdk');
 
 /**
- * Validate a Stellar address
- * @param {string} address - The Stellar address to validate
- * @returns {boolean} True if valid, false otherwise
+ * Validate a Stellar public key.
+ *
+ * @param {string} address - The Stellar address to validate.
+ * @returns {boolean} Returns true when the provided public key is a valid Ed25519 address.
+ * @example
+ * const { validateAddress } = require('stellar-utils');
+ * console.log(validateAddress('GBRPYHIL2CI3FNQ4BXLFMNDLFJUNPU2HY3ZMFSHONUCEOASW7QC7OX2H'));
  */
 function validateAddress(address) {
   try {
@@ -14,9 +18,13 @@ function validateAddress(address) {
 }
 
 /**
- * Validate a Stellar secret key
- * @param {string} secretKey - The Stellar secret key to validate
- * @returns {boolean} True if valid, false otherwise
+ * Validate a Stellar secret key.
+ *
+ * @param {string} secretKey - The Stellar secret key to validate.
+ * @returns {boolean} Returns true when the provided secret seed is valid.
+ * @example
+ * const { validateSecretKey } = require('stellar-utils');
+ * console.log(validateSecretKey('S...'));
  */
 function validateSecretKey(secretKey) {
   try {
@@ -27,8 +35,13 @@ function validateSecretKey(secretKey) {
 }
 
 /**
- * Generate a new Stellar keypair
- * @returns {Object} Keypair object with publicKey and secretKey
+ * Generate a new Stellar keypair.
+ *
+ * @returns {{ publicKey: string, secretKey: string }} An object containing the generated public and secret keys.
+ * @example
+ * const { generateKeypair } = require('stellar-utils');
+ * const pair = generateKeypair();
+ * console.log(pair.publicKey);
  */
 function generateKeypair() {
   const pair = StellarSdk.Keypair.random();
@@ -39,10 +52,14 @@ function generateKeypair() {
 }
 
 /**
- * Get the balance of a Stellar address
- * @param {string} address - The Stellar address
- * @param {string} [network='testnet'] - The network to use ('testnet' or 'public')
- * @returns {Promise<Array>} Array of balances
+ * Load the balances for a Stellar account from Horizon.
+ *
+ * @param {string} address - The Stellar account address to query.
+ * @param {string} [network='testnet'] - The network to use, either 'testnet' or 'public'.
+ * @returns {Promise<Array>} A promise that resolves to the list of account balances.
+ * @example
+ * const { getBalance } = require('stellar-utils');
+ * const balances = await getBalance('GBRPYHIL2CI3FNQ4BXLFMNDLFJUNPU2HY3ZMFSHONUCEOASW7QC7OX2H', 'testnet');
  */
 async function getBalance(address, network = 'testnet') {
   const server = network === 'public' 
@@ -54,14 +71,18 @@ async function getBalance(address, network = 'testnet') {
 }
 
 /**
- * Create and sign a payment transaction
- * @param {string} sourceSecret - Source account secret key
- * @param {string} destinationAddress - Destination address
- * @param {string} amount - Amount to send
- * @param {string} [assetCode='XLM'] - Asset code (default XLM)
- * @param {string} [assetIssuer=null] - Asset issuer (required for non-XLM assets
- * @param {string} [network='testnet'] - Network to use
- * @returns {Promise<string>} Signed transaction XDR
+ * Build and sign a payment transaction for a Stellar account.
+ *
+ * @param {string} sourceSecret - The sender's secret key.
+ * @param {string} destinationAddress - The destination Stellar address.
+ * @param {string} amount - The amount to send.
+ * @param {string} [assetCode='XLM'] - The asset code to send. Defaults to 'XLM'.
+ * @param {string} [assetIssuer=null] - The asset issuer for non-native assets.
+ * @param {string} [network='testnet'] - The network to use, either 'testnet' or 'public'.
+ * @returns {Promise<string>} A promise that resolves to the signed transaction XDR.
+ * @example
+ * const { createPaymentTransaction } = require('stellar-utils');
+ * const xdr = await createPaymentTransaction('S...', 'GBRPYHIL2CI3FNQ4BXLFMNDLFJUNPU2HY3ZMFSHONUCEOASW7QC7OX2H', '1.5');
  */
 async function createPaymentTransaction(sourceSecret, destinationAddress, amount, assetCode = 'XLM', assetIssuer = null, network = 'testnet') {
   const server = network === 'public' 
@@ -95,10 +116,14 @@ async function createPaymentTransaction(sourceSecret, destinationAddress, amount
 }
 
 /**
- * Submit a transaction to the network
- * @param {string} transactionXDR - Signed transaction XDR
- * @param {string} [network='testnet'] - Network to use
- * @returns {Promise<Object>} Transaction result
+ * Submit a signed transaction to Horizon.
+ *
+ * @param {string} transactionXDR - The signed transaction XDR to submit.
+ * @param {string} [network='testnet'] - The network to use, either 'testnet' or 'public'.
+ * @returns {Promise<Object>} A promise that resolves to the submission response.
+ * @example
+ * const { submitTransaction } = require('stellar-utils');
+ * const result = await submitTransaction('AAAA...', 'testnet');
  */
 async function submitTransaction(transactionXDR, network = 'testnet') {
   const server = network === 'public' 
