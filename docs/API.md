@@ -114,9 +114,31 @@ const result = await submitTransaction('AAAA...', 'testnet');
 console.log(result);
 ```
 
+### validateAmount(amount)
+
+Returns `true` when `amount` is a positive decimal string or number suitable for payment builders.
+
+### Errors
+
+Network and validation failures throw `StellarUtilsError` with a stable `code` from `ErrorCodes`
+(`INVALID_ADDRESS`, `INVALID_SECRET`, `INVALID_AMOUNT`, `INVALID_ASSET`, `INVALID_NETWORK`,
+`INVALID_XDR`, `HORIZON_ERROR`). Callers can branch on `error.code` without parsing message text.
+
+```js
+const { getBalance, StellarUtilsError, ErrorCodes } = require('stellar-utils');
+
+try {
+  await getBalance('not-valid');
+} catch (err) {
+  if (err instanceof StellarUtilsError && err.code === ErrorCodes.INVALID_ADDRESS) {
+    console.error('Bad address');
+  }
+}
+```
+
 ## Best practices
 
 - Use `testnet` during development and only switch to `public` for production deployments.
 - Store secret keys in environment variables rather than hard-coding them in scripts.
 - Validate addresses and secret keys before sending transactions.
-- Prefer explicit error handling around network calls.
+- Prefer explicit error handling around network calls; catch `StellarUtilsError` for stable codes.

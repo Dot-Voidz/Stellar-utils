@@ -1,0 +1,43 @@
+{
+  "name": "stellar-utils",
+  "version": "0.2.0",
+  "description": "Focused JavaScript helpers for Stellar key validation, balances, and payment transactions",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch"
+  },
+  "keywords": [
+    "stellar",
+    "blockchain",
+    "horizon",
+    "utils",
+    "payments"
+  ],
+  "author": "Dot-Voidz",
+  "license": "GPL-3.0-only",
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Dot-Voidz/Stellar-utils.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Dot-Voidz/Stellar-utils/issues"
+  },
+  "homepage": "https://github.com/Dot-Voidz/Stellar-utils#readme",
+  "files": [
+    "src",
+    "docs",
+    "examples",
+    "LICENSE",
+    "README.md"
+  ],
+  "devDependencies": {
+    "jest": "^29.7.0"
+  },
+  "dependencies": {
+    "stellar-sdk": "^11.0.1"
+  }
+}

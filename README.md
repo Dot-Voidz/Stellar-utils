@@ -1,49 +1,89 @@
-###  Stellar-Utils
-- A reusable, modular JavaScript library that encapsulates common Stellar operations
-- Provides clean, well-documented abstractions for key management, transaction building, balance queries, and network interactions
-- Built on top of the official Stellar SDK to simplify development workflows
-A lightweight, modular collection of core utility functions designed to streamline development workflows, optimize data handling, and eliminate repetitive boilerplate code.
+# Stellar Utils
 
----
+[![CI](https://github.com/Dot-Voidz/Stellar-utils/actions/workflows/ci.yml/badge.svg)](https://github.com/Dot-Voidz/Stellar-utils/actions/workflows/ci.yml)
+[![License: GPL-3.0](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+
+A small, focused JavaScript toolkit for common Stellar development tasks: key validation, keypair generation, Horizon balance lookups, and payment transaction building/submission. Built on the official [`stellar-sdk`](https://github.com/stellar/js-stellar-sdk).
+
+## Why this exists
+
+Many Stellar tutorials repeat the same Horizon + SDK boilerplate. This library extracts those patterns into tested helpers so apps and scripts can stay small and consistent.
 
 ## Features
 
-*   **Modular Architecture:** Import only what you need to keep production builds lean.
-*   **Zero Dependencies:** Built entirely on native APIs for maximum performance and compatibility.
-*   **Type Safe:** Robust parameter validation and clear return structures.
-*   **Extensible:** Clean codebase designed for easy contribution and utility expansion.
+- Validate Ed25519 public keys and secret seeds
+- Generate keypairs
+- Load account balances from Horizon (testnet or public)
+- Build and sign payment transactions (native XLM or issued assets)
+- Submit signed transaction XDR to Horizon
+- Runnable examples, API docs, optional Express demo, and a Soroban contract scaffold
 
----
+## Requirements
 
-## Installation & Setup
+- Node.js 18+
 
-Clone the repository directly into your project's local directory:
+## Install (from source)
 
 ```bash
-git clone [https://github.com/Dot-Voidz/Stellar-utils.git](https://github.com/Dot-Voidz/Stellar-utils.git)
-Stellar-utils/
-├── main/
-│   ├── src/          # Source files for utility modules
-│   ├── tests/        # Unit tests and validation scripts
-│   └── index.js      # Main entry point
-├── README.md
-└── LICENSE
-Stellar-utils/
-└── main/
-    ├── src/
-    │   ├── keys.js          # Keypair generation, seed handling, and validation
-    │   ├── account.js       # Horizon API wrappers for balances and accounts
-    │   └── transaction.js   # Transaction builders, signing, and submission
-    ├── index.js             # Unified module entry point
-    └── package.json
-// Example: Importing standard helpers (adjust syntax based on your runtime environment)
-const { formatData, validateInput } = require('./Stellar-utils/main');
+git clone https://github.com/Dot-Voidz/Stellar-utils.git
+cd Stellar-utils
+npm install
+```
 
-const rawData = { user_id: 101, status: " active " };
-const cleanData = formatData(rawData);
+## Quick start
 
-console.log(cleanData);
+```js
+const {
+  generateKeypair,
+  validateAddress,
+  validateSecretKey,
+  getBalance,
+  createPaymentTransaction,
+} = require('./src');
 
+const pair = generateKeypair();
+console.log(pair.publicKey);
+console.log(validateAddress(pair.publicKey));
+console.log(validateSecretKey(pair.secretKey));
+
+// Horizon calls (network required)
+// const balances = await getBalance(pair.publicKey, 'testnet');
+```
+
+See [examples/](examples/) for runnable scripts and [docs/API.md](docs/API.md) for the full API.
+
+## Project layout
+
+| Path | Purpose |
+| --- | --- |
+| `src/` | Library source |
+| `tests/` | Jest unit tests |
+| `examples/` | Node scripts for common workflows |
+| `docs/` | API reference |
+| `frontend/` | Static demo UI |
+| `backend/` | Optional Express wrapper |
+| `contract/` | Soroban (Rust) scaffold |
+
+## Development
+
+```bash
 npm test
-# Or run specific test scripts directly
-node main/tests/utils.test.js
+node --check backend/index.js
+node --check frontend/app.js
+```
+
+CI runs tests on Node 18 and 20 and checks demo script syntax on every push and pull request.
+
+## Contributing
+
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) and the [Code of Conduct](CODE_OF_CONDUCT.md) before opening issues or PRs.
+
+We prioritize **impactful** work: correctness, safer error handling, tests, Horizon edge cases, and clear docs. Low-effort typo-only PRs and untested LLM dumps are not accepted.
+
+## Security
+
+If you find a vulnerability (especially around secret-key handling), see [SECURITY.md](SECURITY.md). Never paste real mainnet secret keys into issues, PRs, or examples.
+
+## License
+
+[GPL-3.0](LICENSE)

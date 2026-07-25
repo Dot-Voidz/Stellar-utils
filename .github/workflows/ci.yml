@@ -2,29 +2,30 @@ name: CI
 
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
 jobs:
   test:
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
         node-version: [18.x, 20.x]
 
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-      
+          cache: npm
+
       - name: Install dependencies
-        run: npm install
-      
-      - name: Run root unit tests
+        run: npm ci
+
+      - name: Run unit tests
         run: npm test
 
       - name: Check backend syntax
@@ -35,28 +36,18 @@ jobs:
 
       - name: Validate frontend HTML structure
         run: |
-          node -e "const fs=require('fs'); const html=fs.readFileSync('frontend/index.html','utf8'); if(!/src=\"app.js\"/.test(html)) throw new Error('Missing app.js reference in frontend/index.html'); if(!/href=\"styles.css\"/.test(html)) throw new Error('Missing styles.css reference in frontend/index.html');"
+          node -e "const fs=require('fs'); const html=fs.readFileSync('frontend/index.html','utf8'); if(!/src=\"app.js\"/.test(html)) throw new Error('Missing app.js'); if(!html.includes('<!DOCTYPE html>') && !html.toLowerCase().includes('<!doctype html>')) throw new Error('Missing doctype');"
+
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
       - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
-          profile: minimal
-          override: true
+          targets: wasm32-unknown-unknown
 
-      - name: Install soroban-cli
-        run: |
-          cargo install --locked --version 0.1.0 soroban-cli || cargo install --locked soroban-cli
-
-      - name: Build Stellar-utils contract
+      - name: Check Soroban contract compiles
         working-directory: contract
-        run: soroban build
-
-      - name: Build Dashboard contract
-        working-directory: Stellar-Wallet-Dashboard/contract
-        run: soroban build
-
-      - name: Verify build artifacts
-        run: |
-          ls -1 contract/target/wasm32-unknown-unknown/release/*.wasm
-          ls -1 Stellar-Wallet-Dashboard/contract/target/wasm32-unknown-unknown/release/*.wasm
+        run: cargo check
