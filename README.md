@@ -3,7 +3,7 @@
 [![CI](https://github.com/Dot-Voidz/Stellar-utils/actions/workflows/ci.yml/badge.svg)](https://github.com/Dot-Voidz/Stellar-utils/actions/workflows/ci.yml)
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 
-A small, focused JavaScript toolkit for common Stellar development tasks: key validation, keypair generation, Horizon balance lookups, and payment transaction building/submission. Built on the official [`stellar-sdk`](https://github.com/stellar/js-stellar-sdk).
+A small, focused JavaScript toolkit for common Stellar development tasks: key validation, keypair generation, Horizon balance lookups, and payment transaction building/submission. Built on the official [`@stellar/stellar-sdk`](https://github.com/stellar/js-stellar-sdk).
 
 ## Why this exists
 
@@ -73,6 +73,10 @@ node --check frontend/app.js
 ```
 
 CI runs tests on Node 18 and 20 and checks demo script syntax on every push and pull request.
+
+## SDK package
+
+The library uses the scoped `@stellar/stellar-sdk` package. This does not change the public helper API exposed from `src/index.js`; existing callers should not need code changes when using the helpers documented here.
 
 ## Contributing
 

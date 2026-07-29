@@ -1,4 +1,4 @@
-const StellarSdk = require('stellar-sdk');
+const StellarSdk = require('@stellar/stellar-sdk');
 const { StellarUtilsError, ErrorCodes } = require('./errors');
 const { createServer, resolveNetwork, rethrowHorizon } = require('./network');
 
