@@ -91,4 +91,59 @@ describe('Stellar Utils', () => {
       ).rejects.toMatchObject({ code: ErrorCodes.INVALID_ASSET });
     });
   });
+
+  describe('Horizon error mapping', () => {
+    const { rethrowHorizon } = require('../src/network');
+
+    function capture(fn) {
+      try {
+        fn();
+      } catch (err) {
+        return err;
+      }
+      throw new Error('Expected function to throw');
+    }
+
+    test('maps a 404 Horizon response to ACCOUNT_NOT_FOUND', () => {
+      const horizonError = Object.assign(new Error('Resource Missing'), {
+        name: 'NotFoundError',
+        response: { status: 404, statusText: 'Not Found' },
+      });
+
+      const err = capture(() => rethrowHorizon(horizonError, 'getBalance'));
+
+      expect(err).toBeInstanceOf(StellarUtilsError);
+      expect(err.code).toBe(ErrorCodes.ACCOUNT_NOT_FOUND);
+      expect(err.details).toEqual({ action: 'getBalance', status: 404 });
+      expect(err.cause).toBe(horizonError);
+    });
+
+    test('maps a NotFoundError by name even without a status code', () => {
+      const horizonError = Object.assign(new Error('missing'), { name: 'NotFoundError' });
+
+      const err = capture(() => rethrowHorizon(horizonError, 'submitTransaction'));
+
+      expect(err.code).toBe(ErrorCodes.ACCOUNT_NOT_FOUND);
+      expect(err.message).toBe('missing');
+    });
+
+    test('preserves HORIZON_ERROR for unknown failures', () => {
+      const boom = new Error('rate limited');
+      boom.response = { status: 429 };
+
+      const err = capture(() => rethrowHorizon(boom, 'submitTransaction'));
+
+      expect(err.code).toBe(ErrorCodes.HORIZON_ERROR);
+      expect(err.message).toBe('rate limited');
+      expect(err.details).toEqual({ action: 'submitTransaction', status: 429 });
+      expect(err.cause).toBe(boom);
+    });
+
+    test('falls back to a safe message for status-only errors', () => {
+      const err = capture(() => rethrowHorizon({ response: { status: 404 } }, 'getBalance'));
+
+      expect(err.code).toBe(ErrorCodes.ACCOUNT_NOT_FOUND);
+      expect(err.message).toMatch(/could not find/i);
+    });
+  });
 });

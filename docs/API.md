@@ -120,9 +120,23 @@ Returns `true` when `amount` is a positive decimal string or number suitable for
 
 ### Errors
 
-Network and validation failures throw `StellarUtilsError` with a stable `code` from `ErrorCodes`
-(`INVALID_ADDRESS`, `INVALID_SECRET`, `INVALID_AMOUNT`, `INVALID_ASSET`, `INVALID_NETWORK`,
-`INVALID_XDR`, `HORIZON_ERROR`). Callers can branch on `error.code` without parsing message text.
+Network and validation failures throw `StellarUtilsError` with a stable `code` from `ErrorCodes`.
+Callers can branch on `error.code` without parsing message text.
+
+| Code | Meaning |
+| --- | --- |
+| `INVALID_ADDRESS` | The public key is not a valid Ed25519 address. |
+| `INVALID_SECRET` | The secret seed is not a valid Ed25519 secret. |
+| `INVALID_AMOUNT` | The amount is not a positive decimal value. |
+| `INVALID_ASSET` | A non-native asset is missing a valid issuer public key. |
+| `INVALID_NETWORK` | The network is not `testnet` or `public`. |
+| `INVALID_XDR` | The transaction XDR is missing or cannot be parsed for the network. |
+| `ACCOUNT_NOT_FOUND` | Horizon returned 404 / `NotFoundError` for the requested account. |
+| `HORIZON_ERROR` | Any other Horizon/SDK failure (message preserved, secrets never included). |
+
+Horizon failures wrap the original error as `error.cause` and expose `{ action, status? }` in
+`error.details`, so `ACCOUNT_NOT_FOUND` and unknown `HORIZON_ERROR` failures can be handled
+separately.
 
 ```js
 const { getBalance, StellarUtilsError, ErrorCodes } = require('stellar-utils');
