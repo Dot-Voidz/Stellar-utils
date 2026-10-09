@@ -70,6 +70,31 @@ const balances = await getBalance('GBRPYHIL2CI3FNQ4BXLFMNDLFJUNPU2HY3ZMFSHONUCEO
 console.log(balances);
 ```
 
+### fundAccount(publicKey, network)
+
+Funds a Stellar account using the **testnet** Friendbot. Testnet only.
+
+- Parameters:
+  - `publicKey` (string): The account public key to fund.
+  - `network` (string, optional): Must be `'testnet'`. Defaults to `'testnet'`; any other value throws `INVALID_NETWORK`.
+- Returns:
+  - `Promise<Object>`: The parsed Friendbot response (funded account details).
+- Throws:
+  - `INVALID_NETWORK` when called for `'public'` or an unknown network.
+  - `INVALID_ADDRESS` when `publicKey` is not a valid Ed25519 public key.
+  - `FRIENDBOT_ERROR` when the request fails or Friendbot returns a non-OK response.
+- Example:
+
+```js
+const { generateKeypair, fundAccount } = require('stellar-utils');
+
+const { publicKey } = generateKeypair();
+const result = await fundAccount(publicKey); // testnet only
+console.log(result);
+```
+
+> Never use Friendbot for accounts holding real value. It exists only to fund testnet accounts.
+
 ### createPaymentTransaction(sourceSecret, destinationAddress, amount, assetCode, assetIssuer, network)
 
 Builds and signs a payment transaction.
@@ -132,6 +157,7 @@ Callers can branch on `error.code` without parsing message text.
 | `INVALID_NETWORK` | The network is not `testnet` or `public`. |
 | `INVALID_XDR` | The transaction XDR is missing or cannot be parsed for the network. |
 | `ACCOUNT_NOT_FOUND` | Horizon returned 404 / `NotFoundError` for the requested account. |
+| `FRIENDBOT_ERROR` | A testnet Friendbot funding request failed (transport or non-OK response). |
 | `HORIZON_ERROR` | Any other Horizon/SDK failure (message preserved, secrets never included). |
 
 Horizon failures wrap the original error as `error.cause` and expose `{ action, status? }` in

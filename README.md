@@ -14,6 +14,7 @@ Many Stellar tutorials repeat the same Horizon + SDK boilerplate. This library e
 - Validate Ed25519 public keys and secret seeds
 - Generate keypairs
 - Load account balances from Horizon (testnet or public)
+- Fund testnet accounts with the Friendbot helper (testnet only)
 - Build and sign payment transactions (native XLM or issued assets)
 - Submit signed transaction XDR to Horizon
 - Runnable examples, API docs, optional Express demo, and a Soroban contract scaffold
@@ -38,6 +39,7 @@ const {
   validateAddress,
   validateSecretKey,
   getBalance,
+  fundAccount,
   createPaymentTransaction,
 } = require('./src');
 
@@ -47,6 +49,7 @@ console.log(validateAddress(pair.publicKey));
 console.log(validateSecretKey(pair.secretKey));
 
 // Horizon calls (network required)
+// await fundAccount(pair.publicKey); // testnet Friendbot only
 // const balances = await getBalance(pair.publicKey, 'testnet');
 ```
 

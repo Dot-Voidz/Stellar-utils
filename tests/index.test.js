@@ -4,6 +4,7 @@ const {
   validateAmount,
   generateKeypair,
   getBalance,
+  fundAccount,
   createPaymentTransaction,
   StellarUtilsError,
   ErrorCodes,
@@ -144,6 +145,75 @@ describe('Stellar Utils', () => {
 
       expect(err.code).toBe(ErrorCodes.ACCOUNT_NOT_FOUND);
       expect(err.message).toMatch(/could not find/i);
+    });
+  });
+
+  describe('fundAccount', () => {
+    const originalFetch = global.fetch;
+
+    afterEach(() => {
+      global.fetch = originalFetch;
+      jest.restoreAllMocks();
+    });
+
+    test('rejects non-testnet networks with INVALID_NETWORK', async () => {
+      const { publicKey } = generateKeypair();
+
+      await expect(fundAccount(publicKey, 'public')).rejects.toMatchObject({
+        name: 'StellarUtilsError',
+        code: ErrorCodes.INVALID_NETWORK,
+        details: { network: 'public' },
+      });
+    });
+
+    test('rejects invalid public keys before any HTTP call', async () => {
+      const fetchMock = jest.fn();
+      global.fetch = fetchMock;
+
+      await expect(fundAccount('not-a-key')).rejects.toMatchObject({
+        code: ErrorCodes.INVALID_ADDRESS,
+      });
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    test('calls Friendbot with the address and returns the parsed body', async () => {
+      const { publicKey } = generateKeypair();
+      const body = { hash: 'abc123', ledger: 42 };
+      const fetchMock = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => body,
+      });
+      global.fetch = fetchMock;
+
+      const result = await fundAccount(publicKey);
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      const calledUrl = fetchMock.mock.calls[0][0];
+      expect(calledUrl).toBe(
+        `https://friendbot.stellar.org?addr=${encodeURIComponent(publicKey)}`
+      );
+      expect(result).toEqual(body);
+    });
+
+    test('maps non-ok responses to FRIENDBOT_ERROR', async () => {
+      const { publicKey } = generateKeypair();
+      global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 400 });
+
+      await expect(fundAccount(publicKey)).rejects.toMatchObject({
+        name: 'StellarUtilsError',
+        code: ErrorCodes.FRIENDBOT_ERROR,
+        details: { action: 'fundAccount', status: 400 },
+      });
+    });
+
+    test('maps transport failures to FRIENDBOT_ERROR', async () => {
+      const { publicKey } = generateKeypair();
+      global.fetch = jest.fn().mockRejectedValue(new Error('network down'));
+
+      await expect(fundAccount(publicKey)).rejects.toMatchObject({
+        code: ErrorCodes.FRIENDBOT_ERROR,
+      });
     });
   });
 });

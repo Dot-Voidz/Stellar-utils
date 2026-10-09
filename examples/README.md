@@ -8,8 +8,8 @@ This folder contains runnable Node.js scripts that demonstrate the main Stellar 
 - [02-validate-secret-key.js](./02-validate-secret-key.js) — validates a Stellar secret seed.
 - [03-generate-keypair.js](./03-generate-keypair.js) — creates a new testnet-ready keypair.
 - [04-check-balance.js](./04-check-balance.js) — loads an account balance from Horizon.
-- [05-create-payment.js](./05-create-payment.js) — creates and submits a payment transaction on testnet.
-- [06-submit-transaction.js](./06-submit-transaction.js) — submits a signed transaction XDR.
+- [05-generate-and-validate.js](./05-generate-and-validate.js) — generates a keypair and validates it.
+- [06-fund-testnet-account.js](./06-fund-testnet-account.js) — funds a new account via testnet Friendbot and reads its balance.
 
 ## Running the examples
 
