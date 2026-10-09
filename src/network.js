@@ -1,4 +1,4 @@
-const StellarSdk = require('stellar-sdk');
+const StellarSdk = require('@stellar/stellar-sdk');
 const { StellarUtilsError, ErrorCodes } = require('./errors');
 
 const NETWORKS = Object.freeze({
@@ -30,11 +30,11 @@ function resolveNetwork(network = 'testnet') {
 
 /**
  * @param {string} [network='testnet']
- * @returns {import('stellar-sdk').Server}
+ * @returns {import('@stellar/stellar-sdk').Horizon.Server}
  */
 function createServer(network = 'testnet') {
   const { horizonUrl } = resolveNetwork(network);
-  return new StellarSdk.Server(horizonUrl);
+  return new StellarSdk.Horizon.Server(horizonUrl);
 }
 
 /**
