@@ -56,6 +56,17 @@ function horizonStatus(err) {
 }
 
 /**
+ * @param {unknown} err
+ * @returns {boolean} True when Horizon reports the account as missing.
+ */
+function isNotFound(err) {
+  return (
+    horizonStatus(err) === 404 ||
+    (err && typeof err === 'object' && err.name === 'NotFoundError')
+  );
+}
+
+/**
  * Wrap Horizon/SDK failures in a stable error type without leaking secrets.
  * A missing account (404 / NotFoundError) becomes ACCOUNT_NOT_FOUND; every
  * other failure is preserved as HORIZON_ERROR.
@@ -64,8 +75,8 @@ function horizonStatus(err) {
  * @returns {never}
  */
 function rethrowHorizon(err, action) {
+  const notFound = isNotFound(err);
   const status = horizonStatus(err);
-  const notFound = status === 404 || (err && typeof err === 'object' && err.name === 'NotFoundError');
 
   const code = notFound ? ErrorCodes.ACCOUNT_NOT_FOUND : ErrorCodes.HORIZON_ERROR;
   const fallback = notFound
@@ -89,5 +100,7 @@ module.exports = {
   NETWORKS,
   resolveNetwork,
   createServer,
+  horizonStatus,
+  isNotFound,
   rethrowHorizon,
 };

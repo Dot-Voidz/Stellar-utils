@@ -28,11 +28,8 @@ jobs:
       - name: Run unit tests
         run: npm test
 
-      - name: Check backend syntax
-        run: node --check backend/index.js
-
-      - name: Check frontend script syntax
-        run: node --check frontend/app.js
+      - name: Check syntax (src, backend, frontend, examples)
+        run: npm run check
 
       - name: Validate frontend HTML structure
         run: |

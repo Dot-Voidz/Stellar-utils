@@ -33,6 +33,7 @@ Many Stellar tutorials repeat the same Horizon + SDK boilerplate. This library e
 - **Validation** — validate Ed25519 public keys, secret seeds, and payment amounts.
 - **Keypairs** — generate new Stellar keypairs.
 - **Balances** — load account balances from Horizon (testnet or public).
+- **Account checks** — check whether an account exists on a network without error handling.
 - **Funding** — fund testnet accounts via Friendbot (testnet only).
 - **Payments** — build and sign payment transactions (native XLM or issued assets).
 - **Submission** — submit signed transaction XDR to Horizon.
@@ -86,6 +87,7 @@ See [`examples/`](examples/) for runnable scripts and [`docs/API.md`](docs/API.m
 | `validateAmount(amount)` | `boolean` | Validate a positive decimal amount. |
 | `generateKeypair()` | `{ publicKey, secretKey }` | Generate a new random keypair. |
 | `getBalance(address, network?)` | `Promise<Array>` | Load account balances from Horizon. |
+| `accountExists(address, network?)` | `Promise<boolean>` | Check whether an account exists on a network (`false` for missing accounts). |
 | `fundAccount(publicKey, network?)` | `Promise<Object>` | Fund a testnet account via Friendbot (testnet only). |
 | `createPaymentTransaction(sourceSecret, destinationAddress, amount, assetCode?, assetIssuer?, network?)` | `Promise<string>` | Build and sign a payment transaction, returning signed XDR. |
 | `submitTransaction(transactionXDR, network?)` | `Promise<Object>` | Submit a signed transaction XDR to Horizon. |
@@ -112,7 +114,7 @@ try {
 | --- | --- |
 | `INVALID_ADDRESS` | The public key is not a valid Ed25519 address. |
 | `INVALID_SECRET` | The secret seed is not a valid Ed25519 secret. |
-| `INVALID_AMOUNT` | The amount is not a positive decimal value. |
+| `INVALID_AMOUNT` | The amount is not a positive decimal value, exceeds 7 decimal places, or is too large to serialize. |
 | `INVALID_ASSET` | A non-native asset is missing a valid issuer public key. |
 | `INVALID_NETWORK` | The network is not `testnet` or `public`. |
 | `INVALID_XDR` | The transaction XDR is missing or cannot be parsed. |
@@ -132,6 +134,8 @@ The [`examples/`](examples/) directory contains runnable Node.js scripts:
 | [`04-check-balance.js`](examples/04-check-balance.js) | Load an account balance from Horizon. |
 | [`05-generate-and-validate.js`](examples/05-generate-and-validate.js) | Generate a keypair and validate it. |
 | [`06-fund-testnet-account.js`](examples/06-fund-testnet-account.js) | Fund an account via testnet Friendbot. |
+| [`07-create-and-submit-payment.js`](examples/07-create-and-submit-payment.js) | Build, sign, and submit a testnet payment, then read the recipient balance. |
+| [`08-check-account-exists.js`](examples/08-check-account-exists.js) | Check whether an account exists on the testnet. |
 
 Run any example from the project root:
 
@@ -156,12 +160,10 @@ node examples/01-validate-address.js
 ```bash
 npm test              # run the Jest test suite
 npm run test:watch    # run tests in watch mode
-
-node --check backend/index.js
-node --check frontend/app.js
+npm run check         # syntax-check src, backend, frontend, and examples
 ```
 
-CI runs the test suite on Node.js 18 and 20, validates the demo scripts and frontend markup, and checks that the Soroban contract compiles.
+CI runs the test suite on Node.js 18 and 20, syntax-checks the demo scripts and helpers, validates the frontend markup, and checks that the Soroban contract compiles.
 
 ## Contributing
 

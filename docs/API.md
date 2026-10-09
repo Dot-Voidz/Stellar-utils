@@ -70,6 +70,28 @@ const balances = await getBalance('GBRPYHIL2CI3FNQ4BXLFMNDLFJUNPU2HY3ZMFSHONUCEO
 console.log(balances);
 ```
 
+### accountExists(address, network)
+
+Checks whether a Stellar account exists on the selected network.
+
+- Parameters:
+  - `address` (string): The Stellar public key to check.
+  - `network` (string, optional): `'testnet'` or `'public'`. Defaults to `'testnet'`.
+- Returns:
+  - `Promise<boolean>`: `true` when Horizon can load the account, `false` when it is missing (404).
+- Throws:
+  - `INVALID_ADDRESS` when `address` is not a valid Ed25519 public key.
+  - `HORIZON_ERROR` (or `ACCOUNT_NOT_FOUND`) for other Horizon failures.
+- Example:
+
+```js
+const { generateKeypair, accountExists } = require('stellar-utils');
+
+const { publicKey } = generateKeypair();
+const exists = await accountExists(publicKey, 'testnet');
+console.log(exists); // false - newly generated accounts are not funded yet
+```
+
 ### fundAccount(publicKey, network)
 
 Funds a Stellar account using the **testnet** Friendbot. Testnet only.
@@ -141,7 +163,15 @@ console.log(result);
 
 ### validateAmount(amount)
 
-Returns `true` when `amount` is a positive decimal string or number suitable for payment builders.
+Returns `true` when `amount` is a positive decimal string or number that Stellar can serialize:
+at most 7 decimal places (stroop precision) and no larger than the maximum transaction amount.
+
+```js
+const { validateAmount } = require('stellar-utils');
+
+validateAmount('1.1234567'); // true
+validateAmount('1.12345678'); // false - more than 7 decimals
+```
 
 ### Errors
 
@@ -152,7 +182,7 @@ Callers can branch on `error.code` without parsing message text.
 | --- | --- |
 | `INVALID_ADDRESS` | The public key is not a valid Ed25519 address. |
 | `INVALID_SECRET` | The secret seed is not a valid Ed25519 secret. |
-| `INVALID_AMOUNT` | The amount is not a positive decimal value. |
+| `INVALID_AMOUNT` | The amount is not a positive decimal value, exceeds 7 decimal places, or is too large to serialize. |
 | `INVALID_ASSET` | A non-native asset is missing a valid issuer public key. |
 | `INVALID_NETWORK` | The network is not `testnet` or `public`. |
 | `INVALID_XDR` | The transaction XDR is missing or cannot be parsed for the network. |

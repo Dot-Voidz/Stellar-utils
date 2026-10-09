@@ -4,6 +4,7 @@ const {
   validateAmount,
   generateKeypair,
   getBalance,
+  accountExists,
   fundAccount,
   createPaymentTransaction,
   StellarUtilsError,
@@ -52,6 +53,28 @@ describe('Stellar Utils', () => {
       expect(validateAmount('')).toBe(false);
       expect(validateAmount(null)).toBe(false);
     });
+
+    test('respects Stellar 7-decimal (stroop) precision', () => {
+      expect(validateAmount('1.1234567')).toBe(true);
+      expect(validateAmount('0.0000001')).toBe(true);
+      expect(validateAmount(1.1234567)).toBe(true);
+      expect(validateAmount('1.12345678')).toBe(false);
+      expect(validateAmount('0.00000001')).toBe(false);
+    });
+
+    test('handles scientific notation like the SDK', () => {
+      expect(validateAmount('1e-7')).toBe(true);
+      expect(validateAmount(0.0000001)).toBe(true);
+      expect(validateAmount('1e-8')).toBe(false);
+      expect(validateAmount('1.23e-5')).toBe(true);
+    });
+
+    test('rejects amounts the SDK cannot serialize', () => {
+      expect(validateAmount('922337203685.4775')).toBe(true);
+      expect(validateAmount('922337203685.4776')).toBe(false);
+      expect(validateAmount('9007199254740993')).toBe(false);
+      expect(validateAmount(Infinity)).toBe(false);
+    });
   });
 
   describe('generateKeypair', () => {
@@ -86,6 +109,13 @@ describe('Stellar Utils', () => {
       await expect(
         createPaymentTransaction(secretKey, publicKey, '0')
       ).rejects.toMatchObject({ code: ErrorCodes.INVALID_AMOUNT });
+
+      await expect(
+        createPaymentTransaction(secretKey, publicKey, '1.12345678')
+      ).rejects.toMatchObject({
+        code: ErrorCodes.INVALID_AMOUNT,
+        details: { amount: '1.12345678' },
+      });
 
       await expect(
         createPaymentTransaction(secretKey, publicKey, '1', 'USDC', 'not-issuer')
@@ -148,6 +178,56 @@ describe('Stellar Utils', () => {
     });
   });
 
+  describe('accountExists', () => {
+    const StellarSdk = require('@stellar/stellar-sdk');
+    let loadAccountMock;
+
+    beforeEach(() => {
+      loadAccountMock = jest
+        .spyOn(StellarSdk.Horizon.Server.prototype, 'loadAccount')
+        .mockResolvedValue({ balances: [] });
+    });
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    test('rejects invalid addresses before any Horizon call', async () => {
+      await expect(accountExists('not-a-key')).rejects.toMatchObject({
+        code: ErrorCodes.INVALID_ADDRESS,
+      });
+      expect(loadAccountMock).not.toHaveBeenCalled();
+    });
+
+    test('resolves true when the account exists', async () => {
+      const { publicKey } = generateKeypair();
+      await expect(accountExists(publicKey)).resolves.toBe(true);
+      expect(loadAccountMock).toHaveBeenCalledTimes(1);
+      expect(loadAccountMock).toHaveBeenCalledWith(publicKey);
+    });
+
+    test('resolves false for a missing account', async () => {
+      loadAccountMock.mockRejectedValueOnce(
+        Object.assign(new Error('Resource Missing'), {
+          name: 'NotFoundError',
+          response: { status: 404 },
+        })
+      );
+      const { publicKey } = generateKeypair();
+      await expect(accountExists(publicKey)).resolves.toBe(false);
+    });
+
+    test('rethrows other Horizon failures as HORIZON_ERROR', async () => {
+      loadAccountMock.mockRejectedValueOnce(
+        Object.assign(new Error('rate limited'), { response: { status: 429 } })
+      );
+      const { publicKey } = generateKeypair();
+      await expect(accountExists(publicKey)).rejects.toMatchObject({
+        code: ErrorCodes.HORIZON_ERROR,
+      });
+    });
+  });
+
   describe('fundAccount', () => {
     const originalFetch = global.fetch;
 
@@ -204,6 +284,21 @@ describe('Stellar Utils', () => {
         name: 'StellarUtilsError',
         code: ErrorCodes.FRIENDBOT_ERROR,
         details: { action: 'fundAccount', status: 400 },
+      });
+    });
+
+    test('surfaces Friendbot rejection details when the response includes them', async () => {
+      const { publicKey } = generateKeypair();
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        json: async () => ({ title: 'Transaction Failed', detail: 'The account is already funded.' }),
+      });
+
+      await expect(fundAccount(publicKey)).rejects.toMatchObject({
+        code: ErrorCodes.FRIENDBOT_ERROR,
+        message: 'Friendbot rejected the request: The account is already funded.',
+        details: { action: 'fundAccount', status: 400, detail: 'The account is already funded.' },
       });
     });
 
