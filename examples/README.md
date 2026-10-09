@@ -10,6 +10,8 @@ This folder contains runnable Node.js scripts that demonstrate the main Stellar 
 - [04-check-balance.js](./04-check-balance.js) — loads an account balance from Horizon.
 - [05-generate-and-validate.js](./05-generate-and-validate.js) — generates a keypair and validates it.
 - [06-fund-testnet-account.js](./06-fund-testnet-account.js) — funds a new account via testnet Friendbot and reads its balance.
+- [07-create-and-submit-payment.js](./07-create-and-submit-payment.js) — builds, signs, and submits a testnet payment, then reads the recipient balance.
+- [08-check-account-exists.js](./08-check-account-exists.js) — checks whether an account exists on testnet.
 
 ## Running the examples
 
