@@ -38,18 +38,50 @@ function createServer(network = 'testnet') {
 }
 
 /**
+ * Extract an HTTP status code from a Horizon/SDK error shape if present.
+ * @param {unknown} err
+ * @returns {number|undefined}
+ */
+function horizonStatus(err) {
+  if (!err || typeof err !== 'object') {
+    return undefined;
+  }
+  if (err.response && typeof err.response === 'object' && typeof err.response.status === 'number') {
+    return err.response.status;
+  }
+  if (typeof err.status === 'number') {
+    return err.status;
+  }
+  return undefined;
+}
+
+/**
  * Wrap Horizon/SDK failures in a stable error type without leaking secrets.
+ * A missing account (404 / NotFoundError) becomes ACCOUNT_NOT_FOUND; every
+ * other failure is preserved as HORIZON_ERROR.
  * @param {unknown} err
  * @param {string} action
  * @returns {never}
  */
 function rethrowHorizon(err, action) {
+  const status = horizonStatus(err);
+  const notFound = status === 404 || (err && typeof err === 'object' && err.name === 'NotFoundError');
+
+  const code = notFound ? ErrorCodes.ACCOUNT_NOT_FOUND : ErrorCodes.HORIZON_ERROR;
+  const fallback = notFound
+    ? 'Horizon could not find the requested account.'
+    : `Horizon request failed during ${action}`;
   const message =
-    (err && typeof err === 'object' && 'message' in err && err.message) ||
-    `Horizon request failed during ${action}`;
-  throw new StellarUtilsError(ErrorCodes.HORIZON_ERROR, String(message), {
+    (err && typeof err === 'object' && typeof err.message === 'string' && err.message) || fallback;
+
+  const details = { action };
+  if (status !== undefined) {
+    details.status = status;
+  }
+
+  throw new StellarUtilsError(code, String(message), {
     cause: err,
-    details: { action },
+    details,
   });
 }
 
