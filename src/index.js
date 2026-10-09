@@ -2,6 +2,8 @@ const StellarSdk = require('stellar-sdk');
 const { StellarUtilsError, ErrorCodes } = require('./errors');
 const { createServer, resolveNetwork, rethrowHorizon } = require('./network');
 
+const FRIENDBOT_URL = 'https://friendbot.stellar.org';
+
 /**
  * Validate a Stellar public key.
  *
@@ -92,6 +94,64 @@ async function getBalance(address, network = 'testnet') {
     return account.balances;
   } catch (err) {
     rethrowHorizon(err, 'getBalance');
+  }
+}
+
+/**
+ * Fund a Stellar account using the testnet Friendbot.
+ *
+ * Testnet only: calling this with any other network throws INVALID_NETWORK.
+ * Never use Friendbot for accounts that hold real value.
+ *
+ * @param {string} publicKey
+ * @param {string} [network='testnet']
+ * @returns {Promise<Object>} Parsed Friendbot response (funded account details).
+ */
+async function fundAccount(publicKey, network = 'testnet') {
+  if (network !== 'testnet') {
+    throw new StellarUtilsError(
+      ErrorCodes.INVALID_NETWORK,
+      'Friendbot funding is only available on testnet.',
+      { details: { network } }
+    );
+  }
+  if (!validateAddress(publicKey)) {
+    throw new StellarUtilsError(
+      ErrorCodes.INVALID_ADDRESS,
+      'A valid Stellar public key is required to fund an account.',
+      { details: { addressType: typeof publicKey } }
+    );
+  }
+
+  const url = `${FRIENDBOT_URL}?addr=${encodeURIComponent(publicKey.trim())}`;
+
+  let response;
+  try {
+    response = await fetch(url);
+  } catch (err) {
+    throw new StellarUtilsError(
+      ErrorCodes.FRIENDBOT_ERROR,
+      'Friendbot request failed. Check your network connection and try again.',
+      { cause: err, details: { action: 'fundAccount' } }
+    );
+  }
+
+  if (!response.ok) {
+    throw new StellarUtilsError(
+      ErrorCodes.FRIENDBOT_ERROR,
+      `Friendbot returned HTTP ${response.status}. The account may already be funded.`,
+      { details: { action: 'fundAccount', status: response.status } }
+    );
+  }
+
+  try {
+    return await response.json();
+  } catch (err) {
+    throw new StellarUtilsError(
+      ErrorCodes.FRIENDBOT_ERROR,
+      'Friendbot returned a malformed response.',
+      { cause: err, details: { action: 'fundAccount' } }
+    );
   }
 }
 
@@ -219,6 +279,7 @@ module.exports = {
   validateAmount,
   generateKeypair,
   getBalance,
+  fundAccount,
   createPaymentTransaction,
   submitTransaction,
   StellarUtilsError,
