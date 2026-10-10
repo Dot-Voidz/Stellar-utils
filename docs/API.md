@@ -117,7 +117,7 @@ console.log(result);
 
 > Never use Friendbot for accounts holding real value. It exists only to fund testnet accounts.
 
-### createPaymentTransaction(sourceSecret, destinationAddress, amount, assetCode, assetIssuer, network)
+### createPaymentTransaction(sourceSecret, destinationAddress, amount, assetCode, assetIssuer, network, options)
 
 Builds and signs a payment transaction.
 
@@ -125,22 +125,82 @@ Builds and signs a payment transaction.
   - `sourceSecret` (string): The sender's secret key.
   - `destinationAddress` (string): The destination Stellar public key.
   - `amount` (string): The amount to send.
-  - `assetCode` (string, optional): The asset code. Defaults to `'XLM'`.
+  - `assetCode` (string, optional): The asset code. Defaults to `'XLM'`. May instead be the options object.
   - `assetIssuer` (string, optional): The asset issuer for non-native assets.
   - `network` (string, optional): `'testnet'` or `'public'`. Defaults to `'testnet'`.
+  - `options` (object, optional): Payment options (see below). May also be passed as the fourth argument.
 - Returns:
   - `Promise<string>`: A signed transaction XDR string.
+
+Options:
+
+| Option | Type | Description |
+| --- | --- | --- |
+| `assetCode` / `assetIssuer` / `network` | `string` | Override the positional arguments when using the options-object form. |
+| `memo` | `string \| number \| bigint \| object` | A string is a text memo, an integer is an id memo, or use `{ type: 'text'\|'id'\|'hash'\|'return', value }`. |
+| `fee` | `string \| number \| bigint` | Fee per operation in stroops. Defaults to the network base fee. |
+| `timeout` | `number` | Seconds until the transaction expires. Defaults to `30`. Ignored when `timebounds` is set. |
+| `timebounds` | `{ minTime?, maxTime? }` | Explicit Unix time bounds (`Date`, number, or numeric string). |
+| `preOps` | `Array` | Raw SDK operations added before the payment. |
+| `changeTrust` | `Array<{ assetCode, assetIssuer, limit? }>` | `changeTrust` operations added before the payment. |
+
+- Throws:
+  - `INVALID_SECRET`, `INVALID_ADDRESS`, `INVALID_AMOUNT`, `INVALID_ASSET` for bad inputs.
+  - `INVALID_MEMO` when a memo is malformed.
+  - `INVALID_OPTIONS` when `fee`, `timeout`, `timebounds`, or pre-ops are malformed.
+  - `HORIZON_ERROR` / `ACCOUNT_NOT_FOUND` when the source account cannot be loaded.
 - Example:
 
 ```js
 const { createPaymentTransaction } = require('stellar-utils');
 
+// Options-object form with a text memo, custom fee, and a trustline pre-op.
 const xdr = await createPaymentTransaction(
   'S...',
   'GBRPYHIL2CI3FNQ4BXLFMNDLFJUNPU2HY3ZMFSHONUCEOASW7QC7OX2H',
-  '1.5'
+  '1.5',
+  {
+    memo: 'invoice-42',
+    fee: '200',
+    timeout: 60,
+    changeTrust: [{ assetCode: 'USDC', assetIssuer: 'G...', limit: '1000' }],
+  }
 );
-console.log(xdr);
+```
+
+The positional form is fully supported and can be extended with a trailing options object:
+
+```js
+const xdr = await createPaymentTransaction(
+  'S...',
+  'GB...',
+  '1.5',
+  'USDC',
+  'G...',
+  'testnet',
+  { memo: 42 }
+);
+```
+
+### createChangeTrustOperation(assetCode, assetIssuer, limit)
+
+Builds a `changeTrust` operation for a non-native asset, useful as a payment pre-op.
+
+- Parameters:
+  - `assetCode` (string): A 1-12 character asset code (not `XLM`).
+  - `assetIssuer` (string): The issuer's public key.
+  - `limit` (string, optional): The trust limit. Defaults to the SDK maximum.
+- Returns:
+  - `Operation`: A Stellar SDK `changeTrust` operation.
+- Throws:
+  - `INVALID_ASSET` when the code is native or the issuer is invalid.
+  - `INVALID_AMOUNT` when `limit` is not a valid amount.
+- Example:
+
+```js
+const { createChangeTrustOperation } = require('stellar-utils');
+
+const op = createChangeTrustOperation('USDC', 'GBRPYHIL2CI3FNQ4BXLFMNDLFJUNPU2HY3ZMFSHONUCEOASW7QC7OX2H');
 ```
 
 ### submitTransaction(transactionXDR, network)
@@ -184,6 +244,8 @@ Callers can branch on `error.code` without parsing message text.
 | `INVALID_SECRET` | The secret seed is not a valid Ed25519 secret. |
 | `INVALID_AMOUNT` | The amount is not a positive decimal value, exceeds 7 decimal places, or is too large to serialize. |
 | `INVALID_ASSET` | A non-native asset is missing a valid issuer public key. |
+| `INVALID_MEMO` | The memo is malformed (empty/too-long text, non-integer id, or non-32-byte hash). |
+| `INVALID_OPTIONS` | A payment option (fee, timeout, timebounds, pre-ops) is malformed. |
 | `INVALID_NETWORK` | The network is not `testnet` or `public`. |
 | `INVALID_XDR` | The transaction XDR is missing or cannot be parsed for the network. |
 | `ACCOUNT_NOT_FOUND` | Horizon returned 404 / `NotFoundError` for the requested account. |
