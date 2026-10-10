@@ -12,6 +12,7 @@ This folder contains runnable Node.js scripts that demonstrate the main Stellar 
 - [06-fund-testnet-account.js](./06-fund-testnet-account.js) — funds a new account via testnet Friendbot and reads its balance.
 - [07-create-and-submit-payment.js](./07-create-and-submit-payment.js) — builds, signs, and submits a testnet payment, then reads the recipient balance.
 - [08-check-account-exists.js](./08-check-account-exists.js) — checks whether an account exists on testnet.
+- [09-payment-with-memo.js](./09-payment-with-memo.js) — builds a payment with a memo, custom fee, and timeout using the options API.
 
 ## Running the examples
 

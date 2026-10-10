@@ -36,6 +36,7 @@ Many Stellar tutorials repeat the same Horizon + SDK boilerplate. This library e
 - **Account checks** — check whether an account exists on a network without error handling.
 - **Funding** — fund testnet accounts via Friendbot (testnet only).
 - **Payments** — build and sign payment transactions (native XLM or issued assets).
+- **Payment options** — attach text/id/hash/return memos, set custom fees and time bounds, and add `changeTrust` or raw pre-ops via an options object.
 - **Submission** — submit signed transaction XDR to Horizon.
 - **Structured errors** — stable, machine-readable error codes for callers.
 - **Tooling** — runnable examples, API docs, an optional Express demo, and a Soroban (Rust) contract scaffold.
@@ -89,10 +90,15 @@ See [`examples/`](examples/) for runnable scripts and [`docs/API.md`](docs/API.m
 | `getBalance(address, network?)` | `Promise<Array>` | Load account balances from Horizon. |
 | `accountExists(address, network?)` | `Promise<boolean>` | Check whether an account exists on a network (`false` for missing accounts). |
 | `fundAccount(publicKey, network?)` | `Promise<Object>` | Fund a testnet account via Friendbot (testnet only). |
-| `createPaymentTransaction(sourceSecret, destinationAddress, amount, assetCode?, assetIssuer?, network?)` | `Promise<string>` | Build and sign a payment transaction, returning signed XDR. |
+| `createPaymentTransaction(sourceSecret, destinationAddress, amount, assetCode?, assetIssuer?, network?, options?)` | `Promise<string>` | Build and sign a payment transaction, returning signed XDR. |
+| `createChangeTrustOperation(assetCode, assetIssuer, limit?)` | `Operation` | Build a `changeTrust` operation for a non-native asset. |
 | `submitTransaction(transactionXDR, network?)` | `Promise<Object>` | Submit a signed transaction XDR to Horizon. |
 
 `network` accepts `'testnet'` (default) or `'public'`. See [`docs/API.md`](docs/API.md) for parameter details.
+
+`createPaymentTransaction` also accepts an options object as its fourth argument (or appended last):
+`{ assetCode, assetIssuer, network, memo, fee, timeout, timebounds, preOps, changeTrust }`. Memos accept a
+string (text), an integer (id), or `{ type: 'text'|'id'|'hash'|'return', value }`.
 
 ## Error handling
 
@@ -116,6 +122,8 @@ try {
 | `INVALID_SECRET` | The secret seed is not a valid Ed25519 secret. |
 | `INVALID_AMOUNT` | The amount is not a positive decimal value, exceeds 7 decimal places, or is too large to serialize. |
 | `INVALID_ASSET` | A non-native asset is missing a valid issuer public key. |
+| `INVALID_MEMO` | The memo is malformed (empty/too-long text, non-integer id, or non-32-byte hash). |
+| `INVALID_OPTIONS` | A payment option (fee, timeout, timebounds, pre-ops) is malformed. |
 | `INVALID_NETWORK` | The network is not `testnet` or `public`. |
 | `INVALID_XDR` | The transaction XDR is missing or cannot be parsed. |
 | `ACCOUNT_NOT_FOUND` | Horizon returned 404 / `NotFoundError` for the account. |
@@ -136,6 +144,7 @@ The [`examples/`](examples/) directory contains runnable Node.js scripts:
 | [`06-fund-testnet-account.js`](examples/06-fund-testnet-account.js) | Fund an account via testnet Friendbot. |
 | [`07-create-and-submit-payment.js`](examples/07-create-and-submit-payment.js) | Build, sign, and submit a testnet payment, then read the recipient balance. |
 | [`08-check-account-exists.js`](examples/08-check-account-exists.js) | Check whether an account exists on the testnet. |
+| [`09-payment-with-memo.js`](examples/09-payment-with-memo.js) | Build a payment with a memo, custom fee, and timeout. |
 
 Run any example from the project root:
 
