@@ -6,6 +6,7 @@ const {
   getBalance,
   accountExists,
   fundAccount,
+  createChangeTrustOperation,
   createPaymentTransaction,
   StellarUtilsError,
   ErrorCodes,
@@ -120,6 +121,157 @@ describe('Stellar Utils', () => {
       await expect(
         createPaymentTransaction(secretKey, publicKey, '1', 'USDC', 'not-issuer')
       ).rejects.toMatchObject({ code: ErrorCodes.INVALID_ASSET });
+    });
+  });
+
+  describe('createChangeTrustOperation', () => {
+    const StellarSdk = require('@stellar/stellar-sdk');
+
+    test('builds a changeTrust operation for a non-native asset', () => {
+      const issuer = generateKeypair().publicKey;
+      const op = StellarSdk.Operation.fromXDRObject(
+        createChangeTrustOperation('usdc', issuer, '500')
+      );
+
+      expect(op.type).toBe('changeTrust');
+      expect(op.line.getCode()).toBe('USDC');
+      expect(Number(op.limit)).toBe(500);
+    });
+
+    test('rejects the native asset and invalid issuers', () => {
+      const issuer = generateKeypair().publicKey;
+
+      function capture(fn) {
+        try {
+          fn();
+        } catch (err) {
+          return err;
+        }
+        throw new Error('Expected function to throw');
+      }
+
+      expect(capture(() => createChangeTrustOperation('XLM', issuer))).toMatchObject({
+        code: ErrorCodes.INVALID_ASSET,
+      });
+      expect(capture(() => createChangeTrustOperation('USDC', 'not-a-key'))).toMatchObject({
+        code: ErrorCodes.INVALID_ASSET,
+      });
+    });
+  });
+
+  describe('createPaymentTransaction options', () => {
+    const StellarSdk = require('@stellar/stellar-sdk');
+    const { publicKey: destination } = generateKeypair();
+    let source;
+    let loadAccountMock;
+
+    function decode(xdr) {
+      return StellarSdk.TransactionBuilder.fromXDR(xdr, StellarSdk.Networks.TESTNET);
+    }
+
+    beforeEach(() => {
+      source = generateKeypair();
+      loadAccountMock = jest
+        .spyOn(StellarSdk.Horizon.Server.prototype, 'loadAccount')
+        .mockResolvedValue(new StellarSdk.Account(source.publicKey, '100'));
+    });
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    test('attaches a text memo via the options object', async () => {
+      const xdr = await createPaymentTransaction(source.secretKey, destination, '1', {
+        memo: 'invoice-42',
+      });
+
+      const tx = decode(xdr);
+      expect(loadAccountMock).toHaveBeenCalledTimes(1);
+      expect(tx.memo.type).toBe('text');
+      expect(tx.memo.value.toString()).toBe('invoice-42');
+    });
+
+    test('attaches an id memo from a number', async () => {
+      const xdr = await createPaymentTransaction(source.secretKey, destination, '1', { memo: 42 });
+
+      const tx = decode(xdr);
+      expect(tx.memo.type).toBe('id');
+      expect(tx.memo.value.toString()).toBe('42');
+    });
+
+    test('supports explicit hash and return memos', async () => {
+      const hex = 'ab'.repeat(32);
+
+      const hashXdr = await createPaymentTransaction(source.secretKey, destination, '1', {
+        memo: { type: 'hash', value: hex },
+      });
+      expect(decode(hashXdr).memo.type).toBe('hash');
+
+      const returnXdr = await createPaymentTransaction(source.secretKey, destination, '1', {
+        memo: { type: 'return', value: hex },
+      });
+      expect(decode(returnXdr).memo.type).toBe('return');
+    });
+
+    test('applies a custom fee and timebounds', async () => {
+      const xdr = await createPaymentTransaction(source.secretKey, destination, '1', {
+        fee: '500',
+        timebounds: { minTime: 100, maxTime: 1893456000 },
+      });
+
+      const tx = decode(xdr);
+      expect(tx.fee).toBe('500');
+      expect(tx.timeBounds).toEqual({ minTime: '100', maxTime: '1893456000' });
+    });
+
+    test('adds changeTrust and raw pre-ops before the payment', async () => {
+      const issuer = generateKeypair().publicKey;
+      const xdr = await createPaymentTransaction(source.secretKey, destination, '1', {
+        changeTrust: [{ assetCode: 'USDC', assetIssuer: issuer, limit: '1000' }],
+        preOps: [StellarSdk.Operation.bumpSequence({ bumpTo: '5' })],
+      });
+
+      const tx = decode(xdr);
+      expect(tx.operations.map((op) => op.type)).toEqual([
+        'changeTrust',
+        'bumpSequence',
+        'payment',
+      ]);
+    });
+
+    test('rejects an over-long text memo with INVALID_MEMO', async () => {
+      await expect(
+        createPaymentTransaction(source.secretKey, destination, '1', { memo: 'x'.repeat(29) })
+      ).rejects.toMatchObject({ code: ErrorCodes.INVALID_MEMO });
+    });
+
+    test('rejects a malformed memo id', async () => {
+      await expect(
+        createPaymentTransaction(source.secretKey, destination, '1', {
+          memo: { type: 'id', value: -1 },
+        })
+      ).rejects.toMatchObject({ code: ErrorCodes.INVALID_MEMO });
+    });
+
+    test('rejects an invalid fee with INVALID_OPTIONS', async () => {
+      await expect(
+        createPaymentTransaction(source.secretKey, destination, '1', { fee: '0' })
+      ).rejects.toMatchObject({ code: ErrorCodes.INVALID_OPTIONS });
+      expect(loadAccountMock).not.toHaveBeenCalled();
+    });
+
+    test('keeps the positional signature backward compatible with appended options', async () => {
+      const xdr = await createPaymentTransaction(
+        source.secretKey,
+        destination,
+        '1',
+        'XLM',
+        null,
+        'testnet',
+        { memo: 'legacy' }
+      );
+
+      expect(decode(xdr).memo.value.toString()).toBe('legacy');
     });
   });
 
